@@ -216,6 +216,8 @@ end
 disp('Profit per stage')
 disp(sum(Profit)/length(k))
 
+Profit_per_stage = zeros(1,length(k));
+
 for key =1:length(k)
     
        temp= Profit(1:key);
@@ -280,7 +282,7 @@ for action = 1:M
 end
 
 count=0
-col_count = 3
+col_count = M-1
 start_number_count = 0
 for action = 1:M
     
@@ -322,67 +324,110 @@ for act = 1:M
     
         for i= 1:M
             
-            if (i+a-j)> 0
-                rew_units = (i+a-j);
-            end 
-            if (a+i)< i-M
-                Dk = M-(a+i)-1 % fix this 
-                
-                
+            if(i+act)-1-1>M-1 ||(i+act)-1-1<j-1 % Is it even posible  grater or equal?
+                Reward_From_Action{act}(i,j)= -inf;
+            
+            else
+                             
+                if (j-1<i-1) | ((i-1)==0&(j-1)==0) % should the system get reward
+                    
+                    if(M-1-(i-1+a-1)==0)% is the reward 0
+                                         
+                        weight = 0; 
+                    
+                    else
+                        unit_index = M-1;
+                        weight = 0;
+                        for index = 1:(M-1-(i-1+a-1));
+                            
+                            weight = weight+(unit_index)*(1/M) %untis of demand cause penalty
+                     
+                            unit_index = unit_index - 1
+                        end 
+                    end 
+                    rew_units = (i+act-j-1); % reward 
+        
+                    Reward_From_Action{act}(i,j) = -(i)*m-(act)*c+rew_units*r-p*(weight);
+        
+                end
+                Reward_From_Action{act}(i,j) = -(i)*m-(act)*c+rew_units*r-p*(weight);
             end
-        
-            Reward_From_Action{act}(i,j) =   -(i)*m-(act)*c+rew_units*r-p*(((M-1)/2)-ii);
-        
-        end  
-        
-    end 
-      
-    
-    
-    
+        end
+    end
 end
+    
+        
 
 
-V0 = 0
+V0 = 0.5;
 
 V = zeros(1,length(k));
 
-V(end)=V0
+V(end)=V0;
 
 
-k = length(k)-1;
+k = length(k);
 
-policy = zeros(1,length(k));
-V_new = 0 
-V_old = 0
-curr_val = 0
+policy = zeros(1,k);
+V_new = ones(1,M)*0;
+V_new(M) = 0;
+V_old = 0;
+curr_val = 0;
 while k >0
 
-    for act=1:M
+    for i=1:M
     
     
-        for i=1:M
-            curr_val =0 
+        for act=1:M
+            curr_val =0 ;
             for j=1:M
                                     
-               curr_val = curr_val + Transition{act}(i,j)*V(k)
+               curr_val = curr_val + Transition{act}(i,j)*V(j);
             
             end 
-            V(i)=Reward_From_Action{act}(i,j) + curr_val
-            if V_new > V_old
-            policy(k) = act
+            curr_val=Reward_From_Action{act}(i,j) + curr_val;
+            
+            %V_new(i) = max(V_new(i),curr_val)
+          
+            
+            if V_new(i) <= curr_val
+                
+                policy(k) = act;
+                
+                V_new(i) = max(V_new(i),curr_val)
+                
+   
+          
+           end 
             
        
         end
+     
+%     max_diffrace = 0;
+%     
+%     for states = 1:M
+%         max_diffrace = max(max_diffrace,V_new(states));
+%         
+%     end
         
-        
-        end
-    
-    end 
-    
-    k = k - 1
 
-end
+     V = V_new;
+%      end
+%      if(max_diffrace<0.01)
+%          break
+    end 
+     
+    
+    k = k - 1;
+    
+   
+
+end 
+
+
+
+
+
 
 
 
