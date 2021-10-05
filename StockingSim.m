@@ -81,9 +81,23 @@ for i=2:n-1
 end
 Expected_Profit_per_stage =0;
 Expected_Profit_per_stage_saved_per=zeros(1,k);
+% Part 1 starts
 for t=1:k
     
-    Expected_Profit_per_stage=Expected_Profit_per_stage+P0*((P^(t-1))*Reward);
+    
+    
+    % belive I need to add in the half priced end
+    
+    if t==k
+        
+        Expected_Profit_per_stage = Expected_Profit_per_stage+(P0*((P^(t-1))*Reward)/2;
+        
+        
+    else 
+        Expected_Profit_per_stage=Expected_Profit_per_stage+P0*((P^(t-1))*Reward);
+        
+        
+    end 
     
     Expected_Profit_per_stage_saved_per(t)=Expected_Profit_per_stage(1)/t;
     
@@ -147,7 +161,7 @@ for stage = 1:length(k)
     
     maint_cost = m*S(stage);
     
-    D(stage) = round(rand*M);
+    D(stage) = randi([0,M-1],1);
     disp('demand')
     disp(D(stage))
     % rolling avg control pi
@@ -250,7 +264,7 @@ hold on
 plot(K,Expected_Profit_per_stage_saved_per)
 hold on 
 plot(K,Profit_per_stage)
-title('Plot of P_K(BAR) and P_K(HAT)') 
+title(' Question 4 Plot of P_K(BAR) and P_K(HAT)') 
 
 %%
 % Part 2
