@@ -90,7 +90,7 @@ for t=1:k
     
     if t==k
         
-        Expected_Profit_per_stage = Expected_Profit_per_stage+(P0*((P^(t-1))*Reward)/2;
+        Expected_Profit_per_stage = Expected_Profit_per_stage+(P0*((P^(t-1))*Reward))/2;
         
         
     else 
@@ -727,7 +727,7 @@ disp(policy)
 % Part 4
 
 
-%S = zeros(1,length(k)); % stock level
+S = zeros(1,length(K)); % stock level
 %D = zeros(1,length(k)); % demand
 U = zeros(1,length(K)); % policty to restock
 
@@ -735,6 +735,8 @@ U = zeros(1,length(K)); % policty to restock
 %S(1) = 0;
 %S(2:end)=S(2:end)-1;
 planed_pol = [linspace(M, 1, M)];
+
+% optimal system
 
 %policy(16:20) = 1;
 for stage = 1:length(K)
@@ -744,8 +746,7 @@ for stage = 1:length(K)
     maint_cost = m*S(stage);
     
     %D(stage) = round(rand*M);
-    disp('demand')
-    disp(D(stage))
+
     % rolling avg control pi
 
     %S_avg(stage) = sum(S(1:stage))/stage
@@ -753,6 +754,27 @@ for stage = 1:length(K)
     %maint cost
     
     U(stage) = policy(S(stage)+1)-1
+    
+    S(stage+1) = (U(stage)-D(stage))
+    
+    if(S(stage+1)<0)
+        
+       S(stage+1)=0;
+       
+    end
+    
+    if(S(stage)<0)
+        
+       S(stage)=0;
+       
+    end
+    
+    
+    
+    
+    
+    disp('demand')
+    %disp(D(stage))
     
     %U(stage) = abs(M-S_avg(stage)) % need to work out policy
     if S(stage) <= 0
@@ -826,20 +848,140 @@ for key =1:length(K)
     
 end 
 
+% lazy policy with same demand
+
+S = zeros(1,length(K)); % stock level
+%D = zeros(1,length(k)); % demand
+U = zeros(1,length(K)); % policty to restock
+
+%S(1) = 0;
+%S(2:end)=S(2:end)-1;
+
+
+%policy(16:20) = 1;
+
+pol=[zeros(1,M)];
+pol(1)=M-1;
+for stage = 1:length(K)
+    
+    %randi(M,1,1)
+    
+    maint_cost = m*S(stage);
+    
+    %D(stage) = round(rand*M);
+
+    % rolling avg control pi
+
+    %S_avg(stage) = sum(S(1:stage))/stage
+     
+    %maint cost
+    
+    U(stage) = pol(S(stage)+1);
+    
+    S(stage+1) = (U(stage)-D(stage));
+   
+    
+   if(S(stage+1)<0)
+        
+       S(stage+1)=0;
+       
+    end
+    
+    if(S(stage)<0)
+        
+       S(stage)=0;
+       
+    end
+    
+    disp('demand')
+    %disp(D(stage))
+    
+    %U(stage) = abs(M-S_avg(stage)) % need to work out policy
+    if S(stage) <= 0
+        %U(stage) = M;
+        Profit_lazy(stage) =   -(c*U(stage))+r*D(stage);
+        disp('restocking all')
+        
+    elseif S(stage) > 0
+        %U(stage) = 0;
+        disp('not buying any more stock')
+            
+
+   
+        if(D(stage)> S(stage)+U(stage))
+            disp('demand biger then stock')
+            Profit_lazy(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
+        
+    
+        end 
+    
+        if(D(stage)<= S(stage)+U(stage))
+            disp('demand less then stock')
+            Profit_lazy(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
+        
+            if (stage ==length(k))
+            
+                disp('left over')
+                % Halfcost 
+                Profit_lazy(stage) =Profit_lazy(stage)+ 0.5*(U(stage)-D(stage))
+            
+            end 
+       
+        
+        end
+
+    end 
+
+    disp('total supply')
+    
+    
+       
+
+        
+    
+    %S(stage+1)=S(stage)+U(stage)-D(stage)
+    
+    %if(S(stage+1)<= 0)
+        
+        %S(stage+1) = 0;
+        
+    %end 
+    
+    %Profit_per_stage(stage)= Profit_per_stage(stage) + Profit(stage)/stage
+    
+    
+end
+
+
+
+disp('Profit per stage lazy')
+disp(sum(Profit_lazy)/length(K))
+
+%Profit_per_stage_opt = zeros(1,length(K)); 
+
+for key =1:length(K)
+    
+       temp= Profit_lazy(1:key);
+       
+       Profit_per_stage_lazy(key) = sum(temp)/key;
+    
+    
+end 
+
 
 
 
 figure(3)
 plot(1:length(K),Profit_opt)
 hold on
-plot(1:length(K),Profit)
+plot(1:length(K),Profit_lazy)
 title('Optimal vs lazy invotory mgmt') 
 xlabel('stages k')
 ylabel('Units '); 
 legend('Profit_opt','Profit');
 
 disp('percent profit better')
-disp((sum(Profit_opt)/sum(Profit))*100)
+disp((sum(Profit_opt)/sum(Profit_lazy))*100)
 
 
 
@@ -848,11 +990,11 @@ figure(4)
 plot(1:length(K),Profit_opt)
 hold on
 plot(1:length(K),Profit_per_stage_opt)
-plot(1:length(K),Profit_per_stage)
+plot(1:length(K),Profit_per_stage_lazy)
 title('Optimal vs lazy invotory mgmt') 
 xlabel('stages k')
 ylabel('Units '); 
-legend('Profit_opt','Profit_per_stage_opt','Profit_per_stage');
+legend('Profit_opt','Profit_per_stage_opt','Profit_per_stage_lazy');
 
 
 
