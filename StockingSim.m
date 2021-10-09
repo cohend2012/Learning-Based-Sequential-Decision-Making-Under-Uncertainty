@@ -502,40 +502,24 @@ V0 =0;
 
 k = length(k);
 policy_over_time = zeros(1,k);
-
 V = ones(M,k)*-inf;
-
 termal_profit = [0:M-1]*(r/2);
 V(:,end) = termal_profit;
-while k >0
-    
-    %V_new = ones(1,M)*-1;
-    for i=1:M
-            
+while k >0 
+    for i=1:M          
         for act=1:M
             curr_val =0 ;
-                  
-            curr_val = avg_profit(i,act)+Transition{act}(i,:)*V(:,k);
-            
-            if k-1<=0
-                
-                break 
-                
+            curr_val = avg_profit(i,act)+Transition{act}(i,:)*V(:,k);            
+            if k-1<=0            
+                break    
             end 
-            
             %V(i,k-1) = max(V(i,k-1),curr_val)
-            
             if V(i,k-1) < curr_val
-                
                 V(i,k-1) = curr_val;
-                
                 recored_actions(k) = act;
                 recored_index(k)   = i;
 
             end 
-
-           
-  
         end 
         
     end 
@@ -557,17 +541,10 @@ for k=1:length(K)
         Best_Index = 1;
     else 
         
-        [Best_Value,Best_Index]=max(V(:,k));
-        
+        [Best_Value,Best_Index]=max(V(:,k));    
     end 
-    
-    
-
-    
     policy_over_k(k) = Best_Index;
-    
-    
-    
+
 end 
 
 expected_profit_from_empy_warehouse = V(1,1);
@@ -652,87 +629,36 @@ h_new = zeros(M,1);
 
 V = 1*-inf;
 for pol_itter = 1:1000
-    
-    
-    for iter = 1:1
-        for i=1:M
-    
-            act = policy(i);
-    
-            curr_val =0 ;
-            
-              
-            curr_val = avg_profit(i,act)
-                                    
-                %curr_val = curr_val + Reward_From_Action{i}(act,j)+Transition{j}(act,i)*V(j);
-            
-             
-            %curr_val= + curr_val;
-            
-            %V_new(i) = max(V_new(i),curr_val);
-          
-            
-            if V <= curr_val
-                
-                V = curr_val
-                
-                %V_new(i) = max(V_new(i),curr_val);
-          
-            end 
-         
-         
-        end
-        
 
-%     
-%      
-%     max_diffrace = 0;
-%     
-%     for states = 1:M
-%         max_diffrace = max(max_diffrace,abs(V(states)-V_new(states)));
-%         
-%     end
-%         
-% 
-%         V = V_new;
-%        
-%      
-%      
-%         if(max_diffrace<0.1)
-%             break
-%          
-%         end 
-%     
-%     
-    
+    for i=1:M
+        act = policy(i);
+        curr_val =0 ;
+ 
+        curr_val = avg_profit(i,act)
+                                    
+        %curr_val = curr_val + Reward_From_Action{i}(act,j)+Transition{j}(act,i)*V(j);
+        %curr_val= + curr_val;
+        %V_new(i) = max(V_new(i),curr_val);
+            
+        if V <= curr_val   
+            V = curr_val
+        end 
+
     end
-    
-    
-    % Find h 
-    
-    
+
+     % Find h_tilida
     for iter = 1:10
         for i=1:M
-    
             act = policy(i);
-    
             curr_val =0 ;
-            
-                     
-            curr_val = avg_profit(i,act)+Transition{act}(i,:)*h-V;
-            
-            curr_val = curr_val + V
-                            
+             
+            curr_val = avg_profit(i,act)+Transition{act}(i,:)*h-V;      
+            curr_val = curr_val + V                       
             saved_trans = Transition{act}(i,:)
-       
-            
             saved_reward(i) = avg_profit(i,act);
             
             %h(i) = curr_val;
             %curr_val= + curr_val;
-            
-            
-          
             if h(i) <= curr_val
                 
                 best_saved_reward = saved_reward;
@@ -741,54 +667,21 @@ for pol_itter = 1:1000
                 h(i) = curr_val;
                 
             end 
-            
-            %h_new(i) = curr_val;
-            
-           %h_new(i) = max(h_new(i),curr_val);
-%             if V_new(i) <= curr_val
-%                 
-%                 policy(i) = act;
-%                 
-%                 V_new(i) = max(V_new(i),curr_val);
-%           
-%             end 
-         
-         
+
         end
-        
-%     max_diffrace = 0;
-    
-%     for states = 1:M
-%         max_diffrace = max(max_diffrace,abs(h(states)-h_new(states)));
-%         
-%     end
 
-        %h = h_new;
-
-%         if(max_diffrace<0.1)
-%             break
-%          
-%         end 
-        
     end 
 
     %x = [h;V]
-    
     I_tilda = eye(M);
     I_tilda(1,:) = [];
     %h_tilda = I_tilda*h;
-    
     %y = [h_tilda;V];
 
-    temp = [I_tilda',zeros(M,1);zeros(1,M-1),1]; % 5x4
-
-    W = [eye(M)-best_saved_trans,ones(M,1)]*temp ;
-
+    W = [eye(M)-best_saved_trans,ones(M,1)]*[I_tilda',zeros(M,1);zeros(1,M-1),1]; % 5x4 ;
     y = inv(W)*best_saved_reward';
-    
     h_tilda = y(1:M);
 
-    
     curr_policy = policy ;
     for i=1:M
             best_val = 0;
@@ -805,26 +698,18 @@ for pol_itter = 1:1000
                     
                     policy(i) = act;
 
-                end
-                
+                 end
             end
-     
-        
         % Do we need to stop
-
     end 
-            
-
         % is the poly stable
 
-        
         if abs(policy-curr_policy)==0        
         
             break
             disp('ready')
 
         end 
-    
 
 end 
 
@@ -1138,3 +1023,52 @@ disp(curr_val_V_mu)
 
 
 
+
+           %h_new(i) = curr_val;
+            
+           %h_new(i) = max(h_new(i),curr_val);
+%             if V_new(i) <= curr_val
+%                 
+%                 policy(i) = act;
+%                 
+%                 V_new(i) = max(V_new(i),curr_val);
+%           
+%             end 
+
+
+    
+%     max_diffrace = 0;
+    
+%     for states = 1:M
+%         max_diffrace = max(max_diffrace,abs(h(states)-h_new(states)));
+%         
+%     end
+
+        %h = h_new;
+
+%         if(max_diffrace<0.1)
+%             break
+%          
+%         end 
+
+%     
+%      
+%     max_diffrace = 0;
+%     
+%     for states = 1:M
+%         max_diffrace = max(max_diffrace,abs(V(states)-V_new(states)));
+%         
+%     end
+%         
+% 
+%         V = V_new;
+%        
+%      
+%      
+%         if(max_diffrace<0.1)
+%             break
+%          
+%         end 
+%     
+%     
+    
