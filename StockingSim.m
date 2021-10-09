@@ -145,7 +145,7 @@ end
 
 
 
-
+% for states first one, layz 
 
 %S = zeros(1,length(k)); % stock level
 D = zeros(1,length(k)); % demand
@@ -365,6 +365,51 @@ for j=2:M
 end 
 
 
+Temp  = Transition;
+
+for a=1:M
+    
+    
+    for i=1:M
+        
+        for j=1:M
+            
+            Transition{a}(i,j) = Temp{j}(a,i)
+            
+            
+        end 
+        
+        
+        
+    end 
+    
+    
+    
+    
+   
+    
+    
+end 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Reward_From_Action = {};
@@ -382,156 +427,154 @@ for i = 1:M
         
     end
     
-    for j = 1:M
+    for demand = 1:M
     
         for act= 1:M
             
+            j = i+a-demand;
+            
+            
+            
             if(i+act)-1-1>M-1 ||(i+act)-1-1<j-1 % Is it even posible  grater or equal?
-                Reward_From_Action{i}(act,j)= -inf;
+                Reward_From_Action{i}(act,demand)= 0;
             
             else
                              
-                if (j-1<i-1) | ((i-1)==0&(j-1)==0) % should the system get reward
+                if demand > i+act % should the system get reward
                     
-                    if(M-1-(i-1+act-1)==0)% is the reward 0
-                                         
-                        weight = 0; 
                     
-                    else
-                        unit_index = M-1;
-                        weight = 0;
-                        for index = 1:(M-1-(i-1+act-1));
-                            
-                            weight = weight+(unit_index)*(1/M); %untis of demand cause penalty
-                     
-                            unit_index = unit_index - 1;
-                        end 
-                    end 
                     rew_units = (i+act-j-1); % reward 
         
-                   Reward_From_Action{i}(act,j) = -(i)*m-(act)*c+rew_units*r-p*(weight);
+                   Reward_From_Action{i}(act,demand) = -(i)*m-(act)*c+rew_units*r-p*(demand-i-act);
         
+                else 
+                    rew_units = (demand-1); % reward 
+                   Reward_From_Action{i}(act,demand) = -(i)*m-(act)*c+rew_units*r;
                 end
-                Reward_From_Action{i}(act,j) = -(i)*m-(act)*c+rew_units*r-p*(weight);
+                
+             
+                
+                
             end
         end
     end
 end
+
+
+
+for i = 1:M 
     
+    for act = 1:M 
+        curr_profit_val = 0 ;
+        for demand = 1:M 
+            
+            curr_profit_val = curr_profit_val+ Reward_From_Action{i}(act,demand);
+            
+            
+        end 
+        avg_profit(i,act) = curr_profit_val/M;
+        
+        
+        
+    end 
+    
+    
+    
+    
+end 
+
+
+
+
+
+
+V_new = ones(M,1)*0;
+V_new(M) = 0;
+V_old = 0;
+curr_val = 0;
         
 % value interation per stage
 val_iter_profit = 0 
 V0 =0;
 
-V = zeros(1,M);
-
-V(end)=V0;
+%V(end)=V0;
 % Value interation, at each k in time slot 
 
 k = length(k);
-
 policy_over_time = zeros(1,k);
-V_new = ones(1,M)*0;
-V_new(M) = 0;
-V_old = 0;
-curr_val = 0;
 
-gamma = 0.75;
+V = ones(M,k)*-inf;
 
+termal_profit = [0:M-1]*(r/2);
+V(:,end) = termal_profit;
 while k >0
     
-    V_new = ones(1,M)*-1;
+    %V_new = ones(1,M)*-1;
     for i=1:M
-        
-    
+            
         for act=1:M
             curr_val =0 ;
+                  
+            curr_val = avg_profit(i,act)+Transition{act}(i,:)*V(:,k);
             
-            if k==1000
-                discount = 0.5; % sell at discount
+            if k-1<=0
                 
-            else
-                discount =1; % no dicount 
+                break 
                 
-            end
-            
-            
-            for j=1:M
-                                    
-               curr_val = curr_val +discount*Reward_From_Action{i}(act,j)+ gamma*Transition{j}(act,i)*V(j);
-            
             end 
             
+            %V(i,k-1) = max(V(i,k-1),curr_val)
+            
+            if V(i,k-1) < curr_val
+                
+                V(i,k-1) = curr_val;
+                
+                recored_actions(k) = act;
+                recored_index(k)   = i;
 
-            
-            
-            %curr_val=discount*Reward_From_Action{i}(act,j) + curr_val;
-            
-            V_new(i) = max(V_new(i),curr_val);
-          
-            
-            if V_new(i) <= curr_val
-                
-                
-                %V_new(i) = max(V_new(i),curr_val);
-                [~,I] = max(V_new); 
-                policy_over_time(k) = act;
-                
-                %V_new(i) = max(V_new(i),curr_val)
-                
-                
-            else
-                %V_new(i) = max(V_new(i),curr_val);
-                [~,I] = max(V_new); 
-                
-                %policy_over_time(k) = act;
-               
-            end
-            
-            
-            
-       
-        end
-        
-        
-        
-        max_diffrace = 0;
-        for states = 1:M
-            max_diffrace = max(max_diffrace,abs(V(states)-V_new(states)));
-        
-        end
-        
-        if(max_diffrace<0.1)
-            break
-            
-         
+            end 
+
+           
+  
         end 
         
-        
-        
-    end
-     
-     
+    end 
     
-    
-        
-
-     V = V_new;
-     
-     
-      
-     
-    
-     
-    val_iter_profit = val_iter_profit + max(V);
     k = k - 1;
     
-   
-
 end 
 
 
-tot_val_iter_profit_perk = val_iter_profit/length(K)
+%k = length(K);
+
+total_profit = 0 ;
+for k=1:length(K)
+    
+    if k == 1
+        
+        Best_Value= V(1,k);
+        
+        Best_Index = 1;
+    else 
+        
+        [Best_Value,Best_Index]=max(V(:,k));
+        
+    end 
+    
+    
+
+    
+    policy_over_k(k) = Best_Index;
+    
+    
+    
+end 
+
+expected_profit_from_empy_warehouse = V(1,1);
+
+
+
+%tot_val_iter_profit_perk = val_iter_profit/length(K)
 
 
 
@@ -546,7 +589,8 @@ V0 =0;
 k = length(k);
 
 policy = ones(1,M);
-V_new = ones(1,M)*0;
+V_new = ones(M,1)*0;
+h_new = ones(M,1)*0;
 V_new(M) = 0;
 V_old = 0;
 curr_val = 0;
@@ -601,28 +645,106 @@ figure(2)
 plot(1:M,policy)
 hold on
 title('States vs Policy') 
-
+% policy inter with ac/s
 policy = ones(1,M);
+h = zeros(M,1);
+h_new = zeros(M,1);
 
+V = 1*-inf;
 for pol_itter = 1:1000
     
     
-    for iter = 1:1000
+    for iter = 1:1
         for i=1:M
     
             act = policy(i);
     
             curr_val =0 ;
-            for j=1:M
-                                    
-                curr_val = curr_val + Reward_From_Action{i}(act,j)+gamma*Transition{j}(act,i)*V(j);
             
-            end 
+              
+            curr_val = avg_profit(i,act)
+                                    
+                %curr_val = curr_val + Reward_From_Action{i}(act,j)+Transition{j}(act,i)*V(j);
+            
+             
             %curr_val= + curr_val;
             
             %V_new(i) = max(V_new(i),curr_val);
           
             
+            if V <= curr_val
+                
+                V = curr_val
+                
+                %V_new(i) = max(V_new(i),curr_val);
+          
+            end 
+         
+         
+        end
+        
+
+%     
+%      
+%     max_diffrace = 0;
+%     
+%     for states = 1:M
+%         max_diffrace = max(max_diffrace,abs(V(states)-V_new(states)));
+%         
+%     end
+%         
+% 
+%         V = V_new;
+%        
+%      
+%      
+%         if(max_diffrace<0.1)
+%             break
+%          
+%         end 
+%     
+%     
+    
+    end
+    
+    
+    % Find h 
+    
+    
+    for iter = 1:10
+        for i=1:M
+    
+            act = policy(i);
+    
+            curr_val =0 ;
+            
+                     
+            curr_val = avg_profit(i,act)+Transition{act}(i,:)*h-V;
+            
+            curr_val = curr_val + V
+                            
+            saved_trans = Transition{act}(i,:)
+       
+            
+            saved_reward(i) = avg_profit(i,act);
+            
+            %h(i) = curr_val;
+            %curr_val= + curr_val;
+            
+            
+          
+            if h(i) <= curr_val
+                
+                best_saved_reward = saved_reward;
+                best_saved_trans  = saved_trans;
+                
+                h(i) = curr_val;
+                
+            end 
+            
+            %h_new(i) = curr_val;
+            
+           %h_new(i) = max(h_new(i),curr_val);
 %             if V_new(i) <= curr_val
 %                 
 %                 policy(i) = act;
@@ -633,31 +755,39 @@ for pol_itter = 1:1000
          
          
         end
-    
-    
-    
-    
-     
-    max_diffrace = 0;
-    
-    for states = 1:M
-        max_diffrace = max(max_diffrace,abs(V(states)-V_new(states)));
         
-    end
-        
+%     max_diffrace = 0;
+    
+%     for states = 1:M
+%         max_diffrace = max(max_diffrace,abs(h(states)-h_new(states)));
+%         
+%     end
 
-        V = V_new;
-       
-     
-     
-        if(max_diffrace<0.1)
-            break
-         
-        end 
+        %h = h_new;
+
+%         if(max_diffrace<0.1)
+%             break
+%          
+%         end 
+        
+    end 
+
+    %x = [h;V]
     
+    I_tilda = eye(M);
+    I_tilda(1,:) = [];
+    %h_tilda = I_tilda*h;
     
+    %y = [h_tilda;V];
+
+    temp = [I_tilda',zeros(M,1);zeros(1,M-1),1]; % 5x4
+
+    W = [eye(M)-best_saved_trans,ones(M,1)]*temp ;
+
+    y = inv(W)*best_saved_reward';
     
-    end
+    h_tilda = y(1:M);
+
     
     curr_policy = policy ;
     for i=1:M
@@ -666,14 +796,9 @@ for pol_itter = 1:1000
             for act = 1:M
                 
                 curr_val = 0;
-                
-                for j=1:M
-                                    
-                    curr_val = curr_val + Reward_From_Action{i}(act,j)+gamma*Transition{j}(act,i)*V(j);
-            
-                end 
-                
-                
+               
+                curr_val = avg_profit(i,act)+Transition{act}(i,:)*h_tilda;
+  
                  if best_val < curr_val
                  
                     best_val = curr_val;
@@ -683,31 +808,23 @@ for pol_itter = 1:1000
                 end
                 
             end
-           
-            
-            
+     
         
         % Do we need to stop
-       
-        
+
     end 
             
-        
+
         % is the poly stable
-        
+
         
         if abs(policy-curr_policy)==0        
         
             break
             disp('ready')
-            
-        
+
         end 
     
-    
-
-
-
 
 end 
 
@@ -753,7 +870,7 @@ for stage = 1:length(K)
      
     %maint cost
     
-    U(stage) = policy(S(stage)+1)-1
+    U(stage) = policy(S(stage)+1)-1 % poly control
     
     S(stage+1) = (U(stage)-D(stage))
     
