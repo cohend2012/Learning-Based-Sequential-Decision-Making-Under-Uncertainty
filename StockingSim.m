@@ -60,37 +60,94 @@ end
 
 P = P + PL;
 
+% 
+% Reward(1)=-3*c+((M-1)/2)*r;
+% Reward(n)=-(M-1)*m+((M-1)/2)*r;
+% 
+% for i=2:n-1
+%     
+%     weight = zeros(i,1);
+%     for ii = 1:i-1
+%         
+%         weight(end-ii)=ii;
+%         
+%     end
+%         
+%         
+%     Reward(i) =   -(ii)*m+dot(P(i,1:i),weight)*r-p*(((M-1)/2)-ii);  
+%     
+%     
+%     
+% end
 
-Reward(1)=-3*c+((M-1)/2)*r;
-Reward(n)=-(M-1)*m+((M-1)/2)*r;
-
-for i=2:n-1
+% M  = 4 not 3 here 
+for state=1:M 
     
-    weight = zeros(i,1);
-    for ii = 1:i-1
-        
-        weight(end-ii)=ii;
-        
-    end
-        
-        
-    Reward(i) =   -(ii)*m+dot(P(i,1:i),weight)*r-p*(((M-1)/2)-ii);  
+    
+  
+       
+    state_ = state -1;
+   
+   for demand=1:M
+       demand_= demand - 1;
+       profit = 0;
+       
+       if(state_ == 0)
+           
+           action = M-1;
+           
+       else 
+           
+           action = 0;
+           
+       end
+       
+       
+       if demand_ > state_ + action
+           
+           profit = -(m*state_+c*action)+r*(state_+action)-p*(demand_-state_-action);
+           
+       elseif demand_ <= state_ + action
+           
+           profit = -(m*state_+c*action)+r*demand_;
+           
+           
+       end
+
+       Reward(state,demand) =   profit;
+       
+       
+       
+   end 
+   
     
     
     
 end
+
+
+temp = Reward;
+Reward = zeros(1,M)';
+
+% rencode reward
+for demand = 1:M
+    
+    Reward(demand) = sum(temp(demand,:))/4
+
+    
+end 
+
+
+
 Expected_Profit_per_stage =0;
 Expected_Profit_per_stage_saved_per=zeros(1,k);
 % Part 1 starts
 for t=1:k
     
     
-    
-    % belive I need to add in the half priced end
-    
     if t==k
         
-        Expected_Profit_per_stage = Expected_Profit_per_stage+(P0*((P^(t-1))*Reward))/2;
+        Expected_Profit_per_stage = Expected_Profit_per_stage+(P0*((P^(t-1))*Reward/2));
         
         
     else 
@@ -154,60 +211,102 @@ U = zeros(1,length(k)); % policty to restock
 
 S(1) = 0;
 S(2:end)=S(2:end)-1;
-
-for stage = 1:length(k)
-    
-    %randi(M,1,1)
-    
-    maint_cost = m*S(stage);
-    
-    D(stage) = randi([0,M-1],1);
-    disp('demand')
-    disp(D(stage))
-    % rolling avg control pi
-
-    %S_avg(stage) = sum(S(1:stage))/stage
-     
-    %maint cost
+ K =[1:1:length(k)];
+D = randi([0,M-1],[1,length(k)]);
+for index = 1:length(K)
     
     
-    %U(stage) = abs(M-S_avg(stage)) % need to work out policy
-    if S(stage) <= 0
-        U(stage) = M-1;
-        Profit(stage) =   -(c*U(stage))+r*D(stage);
-        disp('restocking all')
+    for stage = 1:index
         
-    elseif S(stage) > 0
-        U(stage) = 0;
-        disp('not buying any more stock')
+        %randi(M,1,1)
+        
+        maint_cost = m*S(stage);
+        
+        %D(stage) = randi([0,M-1],1);
+        
+        
+        if S(stage) <= 0
+            U(stage) = M-1;
             
-
-   
-        if(D(stage)> S(stage)+U(stage))
-            disp('demand biger then stock')
-            Profit(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
-        
-    
         end 
-    
-        if(D(stage)<= S(stage)+U(stage))
-            disp('demand less then stock')
+        
+        
+        
+%         S(stage+1) = (U(stage)-D(stage));
+%     
+%         if(S(stage+1)<0)
+%         
+%             S(stage+1)=0;
+%         
+%         end
+%     
+%         if(S(stage)<0)
+%         
+%             S(stage)=0;
+%         
+%         end
+        
+        %disp('demand');
+        %disp(D(stage));
+        
+        %S_avg(stage) = sum(S(1:stage))/stage
+        %maint cost
+        %U(stage) = abs(M-S_avg(stage)) % need to work out policy
+        
+        if(stage ==index)
+            
+            Profit(stage) = 0.5*(S(stage));
+        
+        elseif (D(stage)> S(stage)+U(stage))
+             Profit(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
+        
+        elseif (D(stage)<= S(stage)+U(stage))
             Profit(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
+        end 
         
-            if (stage ==length(k))
-            
-                disp('left over')
-                % Halfcost 
-                Profit(stage) =Profit(stage)+ 0.5*(U(stage)-D(stage))
-            
-            end 
-       
         
-        end
+%         if S(stage) <= 0
+%             %U(stage) = M-1;
+%             Profit(stage) =   -(c*U(stage))+r*D(stage);
+%             %disp('restocking all')
+%             
+%         elseif S(stage) > 0
+%             %U(stage) = 0;
+%             %disp('not buying any more stock')
+%             
+%             if(D(stage)> S(stage)+U(stage))
+%                 %disp('demand biger then stock')
+%                 Profit(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
+%                 
+%             end
+%             
+%             if(D(stage)<= S(stage)+U(stage))
+%                 %disp('demand less then stock')
+%                 Profit(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
+%                 
+%                 if (stage ==index)
+%                     
+%                     %disp('left over')
+%                     % Halfcost
+%                     Profit(stage) =Profit(stage)+ 0.5*(S(stage));
+%                     
+%                 end
+%                 
+%                 
+%             end
+%             
+%         end
 
+        
     end 
-
-    disp('total supply')
+    
+    
+   
+    total = sum(Profit);
+  
+    Profit_per_stage(index) = total/index;
+    
+    %disp('total supply')
     
     
        
@@ -228,18 +327,18 @@ for stage = 1:length(k)
 end
 
 disp('Profit per stage')
-disp(sum(Profit)/length(k))
-
-Profit_per_stage = zeros(1,length(k));
-
-for key =1:length(k)
-    
-       temp= Profit(1:key);
-       
-       Profit_per_stage(key) = sum(temp)/key;
-    
-    
-end 
+% disp(sum(Profit)/length(k))
+% 
+% Profit_per_stage = zeros(1,length(k));
+% 
+% for key =1:length(k)
+%     
+%        temp= Profit(1:key);
+%        
+%        Profit_per_stage(key) = sum(temp)/key;
+%     
+%     
+% end 
 
 
 
@@ -256,7 +355,7 @@ PIE = [ones(1,one(1))]*[w*w.']^-1;
 
 PerStageProfit = PIE*Reward
 
- K =[1:1:length(k)]
+
  
 
 plot(K,PerStageProfit*ones(1,length(k)))
@@ -264,7 +363,7 @@ hold on
 plot(K,Expected_Profit_per_stage_saved_per)
 hold on 
 plot(K,Profit_per_stage)
-title(' Question 4 Plot of P_K(BAR) and P_K(HAT)') 
+title('Question 4 Plot of P_K(BAR) and P_K(HAT)') 
 
 %%
 % Part 2
@@ -368,47 +467,12 @@ end
 Temp  = Transition;
 
 for a=1:M
-    
-    
-    for i=1:M
-        
-        for j=1:M
-            
-            Transition{a}(i,j) = Temp{j}(a,i)
-            
-            
+    for i=1:M 
+        for j=1:M  
+            Transition{a}(i,j) = Temp{j}(a,i);
         end 
-        
-        
-        
     end 
-    
-    
-    
-    
-   
-    
-    
 end 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -420,13 +484,13 @@ Reward_From_Action = {};
 
 for i = 1:M
     
-    weight = zeros(i,1);
-    for ii = 1:i-1
-        
-        weight(end-ii)=ii;
-        
-    end
-    
+%     weight = zeros(i,1);
+%     for ii = 1:i-1
+%         
+%         weight(end-ii)=ii;
+%         
+%     end
+%     
     for demand = 1:M
     
         for act= 1:M
@@ -501,53 +565,63 @@ V0 =0;
 % Value interation, at each k in time slot 
 
 k = length(k);
-policy_over_time = zeros(1,k);
-V = ones(M,k)*-inf;
-termal_profit = [0:M-1]*(r/2);
-V(:,end) = termal_profit;
-while k >0 
-    for i=1:M          
-        for act=1:M
-            curr_val =0 ;
-            curr_val = avg_profit(i,act)+Transition{act}(i,:)*V(:,k);            
-            if k-1<=0            
-                break    
-            end 
-            %V(i,k-1) = max(V(i,k-1),curr_val)
-            if V(i,k-1) < curr_val
-                V(i,k-1) = curr_val;
-                recored_actions(k) = act;
-                recored_index(k)   = i;
-
-            end 
-        end 
+    
+    
+for index = 1:length(K)     
+    
+    policy_over_time = zeros(1,index);
+    V = ones(M,index)*-inf;
+    termal_profit = [0:M-1]*(r/2);
+    V(:,end) = termal_profit;
+    
+    K_ = index;
+    while K_ >0
+        for i=1:M
+            for act=1:M
+                curr_val =0 ;
+                curr_val = avg_profit(i,act)+Transition{act}(i,:)*V(:,K_);
+                if K_-1<=0
+                    break
+                end
+                %V(i,k-1) = max(V(i,k-1),curr_val)
+                if V(i,K_-1) < curr_val
+                    V(i,K_-1) = curr_val;
+                    recored_actions(K_) = act;
+                    recored_index(K_)   = i;
+                    
+                end
+            end
+            
+        end
         
-    end 
+        K_ = K_ - 1;
+        
+    end
     
-    k = k - 1;
-    
-end 
+    expected_profit_from_empy_warehouse(index) = V(1,1)/index;
+     
+end
 
 
 %k = length(K);
 
-total_profit = 0 ;
-for k=1:length(K)
-    
-    if k == 1
-        
-        Best_Value= V(1,k);
-        
-        Best_Index = 1;
-    else 
-        
-        [Best_Value,Best_Index]=max(V(:,k));    
-    end 
-    policy_over_k(k) = Best_Index;
+% total_profit = 0 ;
+% for k=1:length(K)
+%     
+%     if k == 1
+%         
+%         Best_Value= V(1,k);
+%         
+%         Best_Index = 1;
+%     else 
+%         
+%         [Best_Value,Best_Index]=max(V(:,k));    
+%     end 
+%     policy_over_k(k) = Best_Index;
+% 
+% end 
 
-end 
 
-expected_profit_from_empy_warehouse = V(1,1);
 
 
 
@@ -618,10 +692,10 @@ for i=1:M
 end 
 total_time_run = toc(time_start);     
 
-figure(2)
-plot(1:M,policy)
-hold on
-title('States vs Policy') 
+% figure(2)
+% plot(1:M,policy)
+% hold on
+% title('States vs Policy') 
 % policy inter with ac/s
 policy = ones(1,M);
 h = zeros(M,1);
@@ -634,14 +708,14 @@ for pol_itter = 1:1000
         act = policy(i);
         curr_val =0 ;
  
-        curr_val = avg_profit(i,act)
+        curr_val = avg_profit(i,act);
                                     
         %curr_val = curr_val + Reward_From_Action{i}(act,j)+Transition{j}(act,i)*V(j);
         %curr_val= + curr_val;
         %V_new(i) = max(V_new(i),curr_val);
             
         if V <= curr_val   
-            V = curr_val
+            V = curr_val;
         end 
 
     end
@@ -653,8 +727,8 @@ for pol_itter = 1:1000
             curr_val =0 ;
              
             curr_val = avg_profit(i,act)+Transition{act}(i,:)*h-V;      
-            curr_val = curr_val + V                       
-            saved_trans = Transition{act}(i,:)
+            curr_val = curr_val + V ;                      
+            saved_trans = Transition{act}(i,:);
             saved_reward(i) = avg_profit(i,act);
             
             %h(i) = curr_val;
@@ -678,7 +752,7 @@ for pol_itter = 1:1000
     %h_tilda = I_tilda*h;
     %y = [h_tilda;V];
 
-    W = [eye(M)-best_saved_trans,ones(M,1)]*[I_tilda',zeros(M,1);zeros(1,M-1),1]; % 5x4 ;
+    W = [eye(M)-best_saved_trans,ones(M,1)]*[I_tilda',zeros(M,1);zeros(1,M-1),1]; % invertable  ;
     y = inv(W)*best_saved_reward';
     h_tilda = y(1:M);
 
@@ -690,7 +764,7 @@ for pol_itter = 1:1000
                 
                 curr_val = 0;
                
-                curr_val = avg_profit(i,act)+Transition{act}(i,:)*h_tilda;
+                curr_val = avg_profit(i,act)+Transition{act}(i,:)*h;
   
                  if best_val < curr_val
                  
@@ -707,7 +781,7 @@ for pol_itter = 1:1000
         if abs(policy-curr_policy)==0        
         
             break
-            disp('ready')
+            %disp('ready')
 
         end 
 
@@ -715,7 +789,11 @@ end
 
 
 disp('Best Policy is...')
-disp(policy)
+disp(policy-1)
+figure(2)
+plot(1-1:M-1,policy-1)
+hold on
+title('States vs Policy') 
 
 
 
@@ -741,114 +819,128 @@ planed_pol = [linspace(M, 1, M)];
 % optimal system
 
 %policy(16:20) = 1;
-for stage = 1:length(K)
-    
-    %randi(M,1,1)
-    
-    maint_cost = m*S(stage);
-    
-    %D(stage) = round(rand*M);
 
-    % rolling avg control pi
+for index = 1:length(K)
 
-    %S_avg(stage) = sum(S(1:stage))/stage
-     
-    %maint cost
+    for stage = 1:index
     
-    U(stage) = policy(S(stage)+1)-1 % poly control
+        %randi(M,1,1)
     
-    S(stage+1) = (U(stage)-D(stage))
+        maint_cost = m*S(stage);
     
-    if(S(stage+1)<0)
+        %D(stage) = round(rand*M);
+    
+        % rolling avg control pi
+    
+        %S_avg(stage) = sum(S(1:stage))/stage
+    
+        %maint cost
+    
+        U(stage) = policy(S(stage)+1)-1; % poly control
+    
+        S(stage+1) = (U(stage)-D(stage));
+    
+        if(S(stage+1)<0)
         
-       S(stage+1)=0;
-       
-    end
-    
-    if(S(stage)<0)
-        
-       S(stage)=0;
-       
-    end
-    
-    
-    
-    
-    
-    disp('demand')
-    %disp(D(stage))
-    
-    %U(stage) = abs(M-S_avg(stage)) % need to work out policy
-    if S(stage) <= 0
-        %U(stage) = M;
-        Profit_opt(stage) =   -(c*U(stage))+r*D(stage);
-        disp('restocking all')
-        
-    elseif S(stage) > 0
-        %U(stage) = 0;
-        disp('not buying any more stock')
-            
-
-   
-        if(D(stage)> S(stage)+U(stage))
-            disp('demand biger then stock')
-            Profit_opt(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
-        
-    
-        end 
-    
-        if(D(stage)<= S(stage)+U(stage))
-            disp('demand less then stock')
-            Profit_opt(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
-        
-            if (stage ==length(k))
-            
-                disp('left over')
-                % Halfcost 
-                Profit_opt(stage) =Profit_opt(stage)+ 0.5*(U(stage)-D(stage))
-            
-            end 
-       
+            S(stage+1)=0;
         
         end
-
-    end 
-
-    disp('total supply')
     
-    
-       
-
+        if(S(stage)<0)
         
+            S(stage)=0;
+        
+        end
+    
+    
+    
+    
+    
+        %disp('demand')
+        %disp(D(stage))
+    
+        %U(stage) = abs(M-S_avg(stage)) %
+        if S(stage) <= 0
+            %U(stage) = M;
+            Profit_opt(stage) =   -(c*U(stage))+r*D(stage);
+            %disp('restocking all')
+        
+        elseif S(stage) > 0
+            %U(stage) = 0;
+            %disp('not buying any more stock')
+        
+        
+        
+            if(D(stage)> S(stage)+U(stage))
+                %disp('demand biger then stock')
+                Profit_opt(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
+            
+            
+            end
+        
+            if(D(stage)<= S(stage)+U(stage))
+                %disp('demand less then stock')
+                Profit_opt(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
+            
+                if (stage ==length(k))
+                
+                    %disp('left over')
+                % Halfcost
+                    Profit_opt(stage) =Profit_opt(stage)+ 0.5*(U(stage)-D(stage));
+                
+                end
+            
+            
+            end
+        
+        end
+    
+        %disp('total supply')
+    
+    
+    
+    
+    
     
     %S(stage+1)=S(stage)+U(stage)-D(stage)
     
     %if(S(stage+1)<= 0)
-        
-        %S(stage+1) = 0;
-        
-    %end 
+    
+    %S(stage+1) = 0;
+    
+    %end
     
     %Profit_per_stage(stage)= Profit_per_stage(stage) + Profit(stage)/stage
     
     
-end
-
-
-
-disp('Profit per stage')
-disp(sum(Profit_opt)/length(K))
-
-Profit_per_stage_opt = zeros(1,length(K));
-
-for key =1:length(K)
+    end
+    total = 0;
+    for kk = 1:length(Profit_opt)
+        total = total + Profit_opt(kk);
+        
+    end 
     
-       temp= Profit_opt(1:key);
-       
-       Profit_per_stage_opt(key) = sum(temp)/key;
     
+    
+    Profit_per_stage_opt(index)= total/index;
     
 end 
+
+
+
+% disp('Profit per stage')
+% disp(sum(Profit_opt)/length(K))
+% 
+% Profit_per_stage_opt = zeros(1,length(K));
+% 
+% for key =1:length(K)
+%     
+%        temp= Profit_opt(1:key);
+%        
+%        Profit_per_stage_opt(key) = sum(temp)/key;
+%     
+%     
+% end 
 
 % lazy policy with same demand
 
@@ -864,126 +956,149 @@ U = zeros(1,length(K)); % policty to restock
 
 pol=[zeros(1,M)];
 pol(1)=M-1;
-for stage = 1:length(K)
-    
-    %randi(M,1,1)
-    
-    maint_cost = m*S(stage);
-    
-    %D(stage) = round(rand*M);
 
-    % rolling avg control pi
-
-    %S_avg(stage) = sum(S(1:stage))/stage
-     
-    %maint cost
+for index = 1:length(K)
     
-    U(stage) = pol(S(stage)+1);
-    
-    S(stage+1) = (U(stage)-D(stage));
-   
-    
-   if(S(stage+1)<0)
+    for stage = 1:index
         
-       S(stage+1)=0;
-       
-    end
-    
-    if(S(stage)<0)
+        %randi(M,1,1)
         
-       S(stage)=0;
-       
-    end
-    
-    disp('demand')
-    %disp(D(stage))
-    
-    %U(stage) = abs(M-S_avg(stage)) % need to work out policy
-    if S(stage) <= 0
-        %U(stage) = M;
-        Profit_lazy(stage) =   -(c*U(stage))+r*D(stage);
-        disp('restocking all')
+        maint_cost = m*S(stage);
         
-    elseif S(stage) > 0
-        %U(stage) = 0;
-        disp('not buying any more stock')
+        %D(stage) = round(rand*M);
+        
+        % rolling avg control pi
+        
+        %S_avg(stage) = sum(S(1:stage))/stage
+        
+        %maint cost
+        
+        U(stage) = pol(S(stage)+1);
+        
+        S(stage+1) = (U(stage)-D(stage));
+        
+        
+        if(S(stage+1)<0)
             
-
-   
-        if(D(stage)> S(stage)+U(stage))
-            disp('demand biger then stock')
-            Profit_lazy(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
-        
-    
-        end 
-    
-        if(D(stage)<= S(stage)+U(stage))
-            disp('demand less then stock')
-            Profit_lazy(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
-        
-            if (stage ==length(k))
+            S(stage+1)=0;
             
-                disp('left over')
-                % Halfcost 
-                Profit_lazy(stage) =Profit_lazy(stage)+ 0.5*(U(stage)-D(stage))
-            
-            end 
-       
-        
         end
-
-    end 
-
-    disp('total supply')
-    
-    
-       
-
         
-    
-    %S(stage+1)=S(stage)+U(stage)-D(stage)
-    
-    %if(S(stage+1)<= 0)
+        if(S(stage)<0)
+            
+            S(stage)=0;
+            
+        end
+        
+        %disp('demand')
+        %disp(D(stage))
+        
+        %U(stage) = abs(M-S_avg(stage)) % need to work out policy
+        if S(stage) <= 0
+            %U(stage) = M;
+            Profit_lazy(stage) =   -(c*U(stage))+r*D(stage);
+            %disp('restocking all')
+            
+        elseif S(stage) > 0
+            %U(stage) = 0;
+            %disp('not buying any more stock')
+            
+            
+            
+            if(D(stage)> S(stage)+U(stage))
+                %disp('demand biger then stock')
+                Profit_lazy(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
+                
+                
+            end
+            
+            if(D(stage)<= S(stage)+U(stage))
+                %disp('demand less then stock')
+                Profit_lazy(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
+                
+                if (stage ==length(k))
+                    
+                    %disp('left over')
+                    % Halfcost
+                    Profit_lazy(stage) =Profit_lazy(stage)+ 0.5*(U(stage)-D(stage));
+                    
+                end
+                
+                
+            end
+            
+        end
+        
+        %disp('total supply')
+        
+        
+        
+        
+        
+        
+        %S(stage+1)=S(stage)+U(stage)-D(stage)
+        
+        %if(S(stage+1)<= 0)
         
         %S(stage+1) = 0;
         
-    %end 
+        %end
+        
+        %Profit_per_stage(stage)= Profit_per_stage(stage) + Profit(stage)/stage
+        
+        
+    end
     
-    %Profit_per_stage(stage)= Profit_per_stage(stage) + Profit(stage)/stage
+    total = 0;
+    for kk = 1:length(Profit_lazy)
+        total = total + Profit_lazy(kk);
+        
+    end 
     
+    
+    
+    Profit_per_stage_lazy(index)= total/index;
+    
+    
+    
+
     
 end
 
 
 
-disp('Profit per stage lazy')
-disp(sum(Profit_lazy)/length(K))
+% disp('Profit per stage lazy')
+% disp(sum(Profit_lazy)/length(K))
 
 %Profit_per_stage_opt = zeros(1,length(K)); 
 
-for key =1:length(K)
-    
-       temp= Profit_lazy(1:key);
-       
-       Profit_per_stage_lazy(key) = sum(temp)/key;
-    
-    
-end 
-
-
+% for key =1:length(K)
+%     
+%        temp= Profit_lazy(1:key);
+%        
+%        Profit_per_stage_lazy(key) = sum(temp)/key;
+%     
+%     
+% end 
+% 
+% 
 
 
 figure(3)
-plot(1:length(K),Profit_opt)
+plot(1:length(K),Profit_per_stage_opt)
 hold on
-plot(1:length(K),Profit_lazy)
+plot(1:length(K),Profit_per_stage_lazy)
+hold on 
+plot(1:length(K),expected_profit_from_empy_warehouse)
+hold on
+plot(1:length(K),h_tilda(1)*ones(1,length(K)))
 title('Optimal vs lazy invotory mgmt') 
 xlabel('stages k')
-ylabel('Units '); 
-legend('Profit_opt','Profit');
+ylabel('Profit Units '); 
+legend('Profit_opt','Profit','Expected Profit P BAR','P BAR INF');
 
 disp('percent profit better')
-disp((sum(Profit_opt)/sum(Profit_lazy))*100)
+disp((sum(Profit_per_stage_opt)/sum(Profit_per_stage_lazy))*100)
 
 
 
