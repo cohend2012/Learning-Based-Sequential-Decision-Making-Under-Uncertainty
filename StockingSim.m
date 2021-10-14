@@ -4,9 +4,11 @@
 % Assigment Number 1 
 %% Inputs
 
-clear all; clc;
-
+clear all; 
+clc;
+%n = 20
 n = input('Number of sates? ') % Number of sates = n
+
 P = zeros(n,n);
 PL = zeros(n,n);
 % Transistion probability matrix = P
@@ -14,7 +16,8 @@ PL = zeros(n,n);
 P0 = zeros(n,n);
 P0(1,1)= 1;
 
-% Number of stages 
+% Number of stages
+%k = 1000
 k = input('Number of stages? ') % Number of sages = k
 
 %k = [1,2,3,4,5,6,7,8,9,10,11,12];% stages
@@ -25,11 +28,13 @@ m = 0.5; % mait cost
 c = 1; % cost of each item
 r = 2; % rev of each unit
 p = 1; % penalty
-M = n; % max units
+M = n; % max units, The problem outlies we look that M being M-1,
+% I have defined it one unit larger 
 %k = linspace(1, k, k)
 Reward = zeros(n,1);
 
-%%
+%% Section 1: Lazy Stocking Control
+
 total_d = 1/M;
 d = 1/M;
 
@@ -37,7 +42,7 @@ P(1,:) = d;
 P(n,:) = d;
 first_e = true;
 
-
+% loading the probabilty transtion matrix
     
 for j=2:n-1
     P(j,1)=1-total_d;
@@ -60,6 +65,8 @@ end
 
 P = P + PL;
 
+% end of loading the prob. trans matrix
+
 % 
 % Reward(1)=-3*c+((M-1)/2)*r;
 % Reward(n)=-(M-1)*m+((M-1)/2)*r;
@@ -81,6 +88,9 @@ P = P + PL;
 % end
 
 % M  = 4 not 3 here 
+
+% claculating the reward matrix based oy running throuhgh all posible
+% states and actions in part 1
 for state=1:M 
     
     
@@ -129,10 +139,12 @@ end
 temp = Reward;
 Reward = zeros(1,M)';
 
-% rencode reward
+% rencoding the reward matrix into the Expected(reward) vector
+% this is done by summing through j and dividing by M (my M) or the M+1 in
+% the problem
 for demand = 1:M
     
-    Reward(demand) = sum(temp(demand,:))/4
+    Reward(demand) = sum(temp(demand,:))/M;
 
     
 end 
@@ -141,31 +153,33 @@ end
 
 Expected_Profit_per_stage =0;
 Expected_Profit_per_stage_saved_per=zeros(1,k);
-% Part 1 starts
+% Part 1 claculating the expected profit 
 for t=1:k
     
     
-    if t==k
+    if t==k % discount case 
         
         Expected_Profit_per_stage = Expected_Profit_per_stage+(P0*((P^(t-1))*Reward/2));
         
         
-    else 
+    else  % all other cales
         Expected_Profit_per_stage=Expected_Profit_per_stage+P0*((P^(t-1))*Reward);
-        
+        % using the intial P0 where we known where we start we can calculat
+        % the expect profit in a state
         
     end 
     
     Expected_Profit_per_stage_saved_per(t)=Expected_Profit_per_stage(1)/t;
-    
+    % save the per value and normize with respect to the current full stage
+    % length 
 end 
 
-Expected_Profit_per_stage=Expected_Profit_per_stage/k;
+Expected_Profit_per_stage=Expected_Profit_per_stage/k; % save and normize again by the final stage value given
 
-%%
+%% part 2 
+% Generating the states based on Max-Gumble
 
-
-rng(0);
+rng(0); % seed random var for matlab so aid in direct comparision of code 
 for i =1:k
     
     U_vector(i)=rand;
@@ -206,13 +220,13 @@ end
 
 %S = zeros(1,length(k)); % stock level
 D = zeros(1,length(k)); % demand
-U = zeros(1,length(k)); % policty to restock
+U = zeros(1,length(k)); % policy to restock
 
 
 S(1) = 0;
-S(2:end)=S(2:end)-1;
- K =[1:1:length(k)];
-D = randi([0,M-1],[1,length(k)]);
+S(2:end)=S(2:end)-1; % bring all sates down by 1 so the range starts at 0
+ K =[1:1:length(k)]; 
+D = randi([0,M-1],[1,length(k)]); % demand for the system
 for index = 1:length(K)
     
     
@@ -253,14 +267,14 @@ for index = 1:length(K)
         %maint cost
         %U(stage) = abs(M-S_avg(stage)) % need to work out policy
         
-        if(stage ==index)
+        if(stage ==index) % dicount case 
             
             Profit(stage) = 0.5*(S(stage));
         
-        elseif (D(stage)> S(stage)+U(stage))
+        elseif (D(stage)> S(stage)+U(stage)) % more demand then what you can sell
              Profit(stage) = -(maint_cost+c*U(stage))+r*(S(stage)+U(stage))-p*(D(stage)-S(stage)-U(stage));
         
-        elseif (D(stage)<= S(stage)+U(stage))
+        elseif (D(stage)<= S(stage)+U(stage)) % less demand then what you can sell
             Profit(stage) =   -(maint_cost+c*U(stage))+r*D(stage);
         end 
         
@@ -302,9 +316,9 @@ for index = 1:length(K)
     
     
    
-    total = sum(Profit);
+    total = sum(Profit); % calculating the total profit 
   
-    Profit_per_stage(index) = total/index;
+    Profit_per_stage(index) = total/index; % finding the proit per stage
     
     %disp('total supply')
     
@@ -326,7 +340,7 @@ for index = 1:length(K)
     
 end
 
-disp('Profit per stage')
+disp('Profit per stage') 
 % disp(sum(Profit)/length(k))
 % 
 % Profit_per_stage = zeros(1,length(k));
@@ -349,13 +363,13 @@ one = size(P);
 
 w = [eye(one(1))-P,ones(one(1),1)];
 
-% Avg reward per stage 
+% Calculating the Avg reward per stage 
 
 PIE = [ones(1,one(1))]*[w*w.']^-1;
 
 PerStageProfit = PIE*Reward
 
-
+% Plotting for part 1 
  
 
 plot(K,PerStageProfit*ones(1,length(k)))
@@ -363,9 +377,12 @@ hold on
 plot(K,Expected_Profit_per_stage_saved_per)
 hold on 
 plot(K,Profit_per_stage)
-title('Question 4 Plot of P_K(BAR) and P_K(HAT)') 
+title('Question 4 Plot of PK(BAR) and PK(HAT) and P BAR INF') 
+xlabel('Stages K')
+ylabel('Units '); 
+legend('P BAR INF','PK (BAR)','PK HAT');
 
-%%
+%% Part 2 system allowing the policy to be calulated
 % Part 2
 Transition = {};
 count = 0;
@@ -416,9 +433,8 @@ start_number = 1;
 %  
 % end
 
+% Calculating the Transtion Prob matrices
 Transition  = {};
-
-
 
 count=0;
 for j=1:1
@@ -429,12 +445,12 @@ for j=1:1
         total_d = 0;
         for a = 1:M-count
         
-            Transition{j}(a,i) = start_number-total_d
+            Transition{j}(a,i) = start_number-total_d;
             total_d = total_d + d;    
         
         end 
-        start_number =  start_number-d
-        count = count + 1 
+        start_number =  start_number-d;
+        count = count + 1 ;
     end 
     
          
@@ -474,8 +490,9 @@ for a=1:M
     end 
 end 
 
+% finish re-encode into "each cell being action" and "going from i to j"
 
-
+% calculating the reward of the sytem
 Reward_From_Action = {};
 
 %Reward(1)=-3*c+((M-1)/2)*r;
@@ -524,7 +541,7 @@ for i = 1:M
     end
 end
 
-
+%finding the expceted profit by state and action 
 
 for i = 1:M 
     
@@ -548,18 +565,20 @@ for i = 1:M
 end 
 
 
+% expected profit 
+disp('expected profit in single stage under each action state pair')
+disp(avg_profit)
 
-
-
+% value interation per stage
 
 V_new = ones(M,1)*0;
 V_new(M) = 0;
 V_old = 0;
 curr_val = 0;
         
-% value interation per stage
-val_iter_profit = 0 
-V0 =0;
+
+val_iter_profit = 0 ;
+V0 =0;;
 
 %V(end)=V0;
 % Value interation, at each k in time slot 
@@ -572,19 +591,19 @@ for index = 1:length(K)
     policy_over_time = zeros(1,index);
     V = ones(M,index)*-inf;
     termal_profit = [0:M-1]*(r/2);
-    V(:,end) = termal_profit;
+    V(:,end) = termal_profit; % load in termal profit
     
-    K_ = index;
+    K_ = index; % creating the K from the notes 
     while K_ >0
         for i=1:M
             for act=1:M
                 curr_val =0 ;
                 curr_val = avg_profit(i,act)+Transition{act}(i,:)*V(:,K_);
-                if K_-1<=0
+                if K_-1<=0 % if we run out of inter the break out
                     break
                 end
                 %V(i,k-1) = max(V(i,k-1),curr_val)
-                if V(i,K_-1) < curr_val
+                if V(i,K_-1) < curr_val % if the clac curr val is biger then we need to reset the V(State at that stage)
                     V(i,K_-1) = curr_val;
                     recored_actions(K_) = act;
                     recored_index(K_)   = i;
@@ -594,11 +613,11 @@ for index = 1:length(K)
             
         end
         
-        K_ = K_ - 1;
+        K_ = K_ - 1; % decrement K 
         
     end
     
-    expected_profit_from_empy_warehouse(index) = V(1,1)/index;
+    expected_profit_from_empy_warehouse(index) = V(1,1)/index; % save and normilize the profit out inital empty state
      
 end
 
@@ -647,61 +666,63 @@ V_old = 0;
 curr_val = 0;
 
 % policy interations % finds best policy at each stock level
-time_start = tic;
+% testing normal policy calcs
 
-
-for i=1:M
-    
-    
-    for act=1:M
-        curr_val =0 ;
-        for j=1:M
-                                    
-            curr_val = curr_val + Reward_From_Action{i}(act,j)+Transition{j}(act,i)*V(j);
-            
-         end 
-         %curr_val= + curr_val;
-            
-         %V_new(i) = max(V_new(i),curr_val);
-          
-            
-         if V_new(i) <= curr_val
-                
-             policy(i) = act;
-                
-             V_new(i) = max(V_new(i),curr_val);
-        
-          
-         end 
-            
-       
-     end
-     
-%     max_diffrace = 0;
+% 
+% for i=1:M
 %     
-%     for states = 1:M
-%         max_diffrace = max(max_diffrace,V_new(states));
+%     
+%     for act=1:M
+%         curr_val =0 ;
+%         for j=1:M
+%                                     
+%             curr_val = curr_val + Reward_From_Action{i}(act,j)+Transition{j}(act,i)*V(j);
+%             
+%          end 
+%          %curr_val= + curr_val;
+%             
+%          %V_new(i) = max(V_new(i),curr_val);
+%           
+%             
+%          if V_new(i) <= curr_val
+%                 
+%              policy(i) = act;
+%                 
+%              V_new(i) = max(V_new(i),curr_val);
 %         
-%     end
-        
-
-     %V = V_new;
+%           
+%          end 
+%             
+%        
 %      end
-%      if(max_diffrace<0.01)
-%          break
-end 
-total_time_run = toc(time_start);     
+%      
+% %     max_diffrace = 0;
+% %     
+% %     for states = 1:M
+% %         max_diffrace = max(max_diffrace,V_new(states));
+% %         
+% %     end
+%         
+% 
+%      %V = V_new;
+% %      end
+% %      if(max_diffrace<0.01)
+% %          break
+% end 
 
+% without the avg cost policy eval this can be used to plot the policy vs
+% state
 % figure(2)
 % plot(1:M,policy)
 % hold on
 % title('States vs Policy') 
 % policy inter with ac/s
-policy = ones(1,M);
+policy = ones(1,M); % starting with a bad starting policy. 
 h = zeros(M,1);
 h_new = zeros(M,1);
 
 V = 1*-inf;
+time_start = tic;
 for pol_itter = 1:1000
 
     for i=1:M
@@ -709,7 +730,9 @@ for pol_itter = 1:1000
         curr_val =0 ;
  
         curr_val = avg_profit(i,act);
-                                    
+        
+        best_saved_reward(i) = avg_profit(i,act);
+        best_saved_trans(i,:)= Transition{act}(i,:);
         %curr_val = curr_val + Reward_From_Action{i}(act,j)+Transition{j}(act,i)*V(j);
         %curr_val= + curr_val;
         %V_new(i) = max(V_new(i),curr_val);
@@ -721,30 +744,31 @@ for pol_itter = 1:1000
     end
 
      % Find h_tilida
-    for iter = 1:10
-        for i=1:M
-            act = policy(i);
-            curr_val =0 ;
-             
-            curr_val = avg_profit(i,act)+Transition{act}(i,:)*h-V;      
-            curr_val = curr_val + V ;                      
-            saved_trans = Transition{act}(i,:);
-            saved_reward(i) = avg_profit(i,act);
-            
-            %h(i) = curr_val;
-            %curr_val= + curr_val;
-            if h(i) <= curr_val
-                
-                best_saved_reward = saved_reward;
-                best_saved_trans  = saved_trans;
-                
-                h(i) = curr_val;
-                
-            end 
-
-        end
-
-    end 
+%     for iter = 1:1
+%         for i=2:M
+%             act = policy(i);
+%             h(1) = V; 
+%             curr_val =0 ;
+%              
+%             curr_val = avg_profit(i,act)+Transition{act}(i,:)*h;      
+%             curr_val = curr_val - V ;                      
+%             best_saved_trans = Transition{act}(i,:);
+%             best_saved_reward(i) = avg_profit(i,act);
+%             
+%             %h(i) = curr_val;
+%             %curr_val= + curr_val;
+%             if h(i) <= curr_val
+%                 
+%                 %best_saved_reward = saved_reward;
+%                 %best_saved_trans  = saved_trans;
+%                 
+%                 h(i) = curr_val;
+%                 
+%             end 
+% 
+%         end
+% 
+%     end 
 
     %x = [h;V]
     I_tilda = eye(M);
@@ -753,10 +777,10 @@ for pol_itter = 1:1000
     %y = [h_tilda;V];
 
     W = [eye(M)-best_saved_trans,ones(M,1)]*[I_tilda',zeros(M,1);zeros(1,M-1),1]; % invertable  ;
-    y = inv(W)*best_saved_reward';
-    h_tilda = y(1:M);
+    y = inv(W)*best_saved_reward'; % finding y
+    h_tilda = I_tilda*y(1:M); % finding h_tilta 
 
-    curr_policy = policy ;
+    curr_policy = policy ; % load in the current policy for eval
     for i=1:M
             best_val = 0;
             
@@ -764,13 +788,13 @@ for pol_itter = 1:1000
                 
                 curr_val = 0;
                
-                curr_val = avg_profit(i,act)+Transition{act}(i,:)*h;
+                curr_val = avg_profit(i,act)+Transition{act}(i,:)*[0;h_tilda];
   
                  if best_val < curr_val
                  
                     best_val = curr_val;
                     
-                    policy(i) = act;
+                    policy(i) = act; % save the best policy action by state
 
                  end
             end
@@ -778,7 +802,7 @@ for pol_itter = 1:1000
     end 
         % is the poly stable
 
-        if abs(policy-curr_policy)==0        
+        if abs(policy-curr_policy)==0   % if we cant get a better policy or is it the same
         
             break
             %disp('ready')
@@ -786,8 +810,8 @@ for pol_itter = 1:1000
         end 
 
 end 
-
-
+% calc timeing
+total_time_run = toc(time_start);     
 disp('Best Policy is...')
 disp(policy-1)
 figure(2)
@@ -818,7 +842,7 @@ planed_pol = [linspace(M, 1, M)];
 
 % optimal system
 
-%policy(16:20) = 1;
+
 
 for index = 1:length(K)
 
@@ -922,7 +946,7 @@ for index = 1:length(K)
     
     
     
-    Profit_per_stage_opt(index)= total/index;
+    Profit_per_stage_opt(index)= total/index; % finding profit by index
     
 end 
 
@@ -953,9 +977,9 @@ U = zeros(1,length(K)); % policty to restock
 
 
 %policy(16:20) = 1;
-
+% lazy system 
 pol=[zeros(1,M)];
-pol(1)=M-1;
+pol(1)=M-1; %creating the lazy policy
 
 for index = 1:length(K)
     
@@ -1057,7 +1081,7 @@ for index = 1:length(K)
     
     
     
-    Profit_per_stage_lazy(index)= total/index;
+    Profit_per_stage_lazy(index)= total/index; %saving the proift by index 
     
     
     
@@ -1082,7 +1106,7 @@ end
 % end 
 % 
 % 
-
+% plotting for part 2
 
 figure(3)
 plot(1:length(K),Profit_per_stage_opt)
@@ -1091,11 +1115,11 @@ plot(1:length(K),Profit_per_stage_lazy)
 hold on 
 plot(1:length(K),expected_profit_from_empy_warehouse)
 hold on
-plot(1:length(K),h_tilda(1)*ones(1,length(K)))
-title('Optimal vs lazy invotory mgmt') 
-xlabel('stages k')
-ylabel('Profit Units '); 
-legend('Profit_opt','Profit','Expected Profit P BAR','P BAR INF');
+plot(1:length(K),h_tilda(length(h_tilda))*ones(1,length(K)))
+title('Optimal vs Lazy Invotory mgmt') 
+xlabel('Stages K')
+ylabel('Profit Units'); 
+legend('Profit Opt','Profit','Expected Profit P BAR','P BAR INF');
 
 disp('percent profit better')
 disp((sum(Profit_per_stage_opt)/sum(Profit_per_stage_lazy))*100)
