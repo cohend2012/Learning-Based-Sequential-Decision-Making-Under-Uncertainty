@@ -1,0 +1,139 @@
+%Dan Cohen 
+% HW 2
+% POMDP beam projection on the road 
+
+clear all
+clc 
+
+N = 1000;
+K = 1000;
+%S = [1,2];
+
+P0 =[0.5,0.5];
+q = 0.1;
+error = q;
+Q = 10;
+
+l = 1;
+
+B_tilta = [(l-1)/(Q-1) ; (Q-l)/(Q-1)];
+Transistion = eye(2)*(1-q)+[0,q;q,0];
+Bits = 1;
+total_bits = 0 ;
+
+
+good_signal = 1-error;
+
+
+
+rng(0); % seed random var for matlab so aid in direct comparision of code 
+for i =1:K
+    
+    U_vector(i)=rand;
+    
+    G(i)=-log(-log(U_vector(i)));
+    
+end 
+
+
+Uniform_var = rand;
+G(1) = -log(-log(Uniform_var));
+
+
+k_m1 = 1;
+%k = linspace(1, k, k);
+S = zeros(1,K); % stock level
+
+for stage =1:K
+    
+    
+    
+    U_vector=rand(1,2);
+    
+    G = -log(-log(U_vector));
+    
+    
+    [maxV,index] = max(G + log(Transistion(k_m1,1:2))) ;
+    S(stage) = index;
+    k_m1 = S(stage);
+    
+    
+    
+end 
+
+
+for N=1:1000
+    
+    %S = randi(2,1,1)
+    
+    % random policy part a
+    random_policy = randi(2,1,1)
+    
+    if(S(N) == random_policy)
+        total_bits = total_bits + Bits
+        
+    else 
+        total_bits = total_bits +0
+        
+    end 
+  
+end 
+
+
+avg_amount_bits_pers_stage_part_a = (1/N)*total_bits
+
+total_bits =0;
+feedback_y = 0;
+count = 0;
+for N=1:1000
+    
+    
+    %S = randi(2,1,1)
+    
+    % random policy part a
+    
+    beam_train = randi(2,1,1);
+    
+    
+    if(count == 1)
+        count = 0;
+        
+        if S(N) == bad__feedback_policy
+            total_bits = total_bits + Bits;
+            
+        else 
+            total_bits = total_bits +0;
+        end 
+        
+    end
+    
+    
+    
+    if mod(N,2)==0
+        
+        feedback_y = S(N);
+        
+        
+    else 
+        bad__feedback_policy = feedback_y;
+        
+    end 
+    
+    %random_policy = randi(2,1,1)
+    
+    
+
+
+    count = count + 1;
+  
+end 
+
+
+avg_amount_bits_pers_stage_part_b = (1/N)*total_bits
+
+
+
+
+
+
+
