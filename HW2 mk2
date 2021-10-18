@@ -1,0 +1,302 @@
+%Dan Cohen 
+% HW 2
+% POMDP beam projection on the road 
+
+clear all
+clc 
+
+N = 1000;
+K = 1000;
+%S = [1,2];
+
+P0 =[0.5,0.5];
+bel = P0;
+q = 0.1;
+error = q;
+Q = 10;
+actions = [0,1,2];
+l = 1;
+
+B_tilta = [(l-1)/(Q-1) ; (Q-l)/(Q-1)];
+Transistion = eye(2)*(1-q)+[0,q;q,0];
+Bits = 1;
+total_bits = 0 ;
+
+
+good_signal = 1-error;
+
+profit = [ 0 Bits 0; 0 0 Bits];
+
+
+
+rng(0); % seed random var for matlab so aid in direct comparision of code 
+for i =1:K
+    
+    U_vector(i)=rand;
+    
+    G(i)=-log(-log(U_vector(i)));
+    
+end 
+
+
+Uniform_var = rand;
+G(1) = -log(-log(Uniform_var));
+
+
+k_m1 = 1;
+%k = linspace(1, k, k);
+S = zeros(1,K); % stock level
+
+for stage =1:K
+    
+    
+    
+    U_vector=rand(1,2);
+    
+    G = -log(-log(U_vector));
+    
+    
+    [maxV,index] = max(G + log(Transistion(k_m1,1:2))) ;
+    S(stage) = index;
+    k_m1 = S(stage);
+    
+    
+    
+end 
+
+
+% need to create Y feeback
+
+for i =1:K
+    
+    U_vector(i)=rand;
+    
+    G(i)=-log(-log(U_vector(i)));
+    
+end 
+
+
+Uniform_var = rand;
+G(1) = -log(-log(Uniform_var));
+
+
+k_m1 = 1;
+%k = linspace(1, k, k);
+Y = zeros(1,K); % stock level
+
+for stage =1:K
+    
+    
+    
+    U_vector=rand(1,2);
+    
+    G = -log(-log(U_vector));
+    
+    
+    [maxV,index] = max(G + log(Transistion(k_m1,1:2))) ;
+    Y(stage) = index;
+    k_m1 = Y(stage);
+    
+    
+    
+end 
+
+
+
+
+
+
+P{1} = [good_signal,error; ...
+        error,good_signal]
+
+P{2} = ones(2)
+
+P{3} = ones(2)
+
+
+
+V = zeros(2,1000);
+B = bel;
+K_ = 1000; % creating the K 
+while K_ >0
+    y = Y(K_);
+    for act =1:length(actions)
+        curr_val =0 ;
+        for i=1:2
+            
+            curr_val = B*profit(i,act);
+            B =CalcBel(B,act,y,Transistion,i);
+            curr_val = curr_val+Transistion(y,i)*V(i,K_)*B;
+        
+        
+        if K_-1<=0 % if we run out of inter the break out
+            break
+        end
+        %V(i,k-1) = max(V(i,k-1),curr_val)
+        if V(i,K_-1) < curr_val % if the clac curr val is biger then we need to reset the V(State at that stage)
+            V(i,K_-1) = curr_val;
+            recored_actions(K_) = act;
+            recored_index(K_)   = i;
+            
+        end
+        
+        end 
+    end
+    K_ = K_ - 1; % decrement K
+      
+end
+    
+
+total_bits = 0;
+
+for index=1:length(V)
+    
+    
+    [val,loc]=max(V(:,index));
+    
+    record(index) = loc;
+    
+      if(S(index) == record(index))
+        total_bits = total_bits + Bits;
+        
+    else 
+        total_bits = total_bits +0;
+        
+    end 
+    
+    
+
+    
+end 
+
+
+avg_amount_bits_pers_stage_part_c = (1/length(V))*total_bits
+
+
+% part a not looking at feedback
+total_bits = 0;
+for N=1:1000
+    
+    %S = randi(2,1,1)
+    
+    % random policy part a
+    random_policy = randi(2,1,1);
+    
+    if(S(N) == random_policy)
+        total_bits = total_bits + Bits;
+        
+    else 
+        total_bits = total_bits +0;
+        
+    end 
+  
+end 
+
+
+avg_amount_bits_pers_stage_part_a = (1/N)*total_bits
+
+
+% part b with feedback and but have to wait one timestep
+
+total_bits =0;
+feedback_y = 0;
+count = 0;
+for N=1:1000
+    
+    
+    %S = randi(2,1,1)
+    
+    % random policy part a
+    
+    beam_train = randi(2,1,1); % needs to be fixed
+    
+    
+    if(count == 1)
+        count = 0;
+        
+        if S(N) == bad__feedback_policy
+            total_bits = total_bits + Bits;
+            
+        else 
+            total_bits = total_bits +0;
+        end 
+        
+    end
+    
+    
+    
+    if mod(N,2)==0
+        
+        feedback_y = Y(N);
+        
+        
+    else 
+        bad__feedback_policy = feedback_y;
+        
+    end 
+    
+    %random_policy = randi(2,1,1)
+    
+    
+
+
+    count = count + 1;
+  
+end 
+
+
+avg_amount_bits_pers_stage_part_b = (1/N)*total_bits
+
+function [B] = CalcBel(B,u,y,Transistion,j_number)
+error = 0.10;
+
+    for j=j_number:j_number
+    
+        for i=1:length(B)
+            
+            if(u==1)
+
+                prob_seeing_y=1-error;
+                
+            elseif(u~=1)
+                
+                if(i==j)
+                    prob_seeing_y=1-error;
+                    
+                else 
+                     prob_seeing_y=error;
+                    
+                    
+                end 
+                
+            end
+            Top = B(i)*(prob_seeing_y)*Transistion(i,j);
+       
+
+            if ((u==1)&y~=i)
+            
+                sensor_reli = error;
+            
+            elseif ((u==1)&y==i)
+                sensor_reli = 1-error;
+            
+            else 
+            
+                sensor_reli = 1;
+          
+            end 
+    
+            Bottom = B(i)*sensor_reli;%Transistion
+        end 
+
+        B = Top/Bottom;
+    
+    end 
+
+end
+
+
+
+
+
+
